@@ -11,8 +11,7 @@ use RuntimeException;
 
 class CreateAfasOrderFromIncomingOrder
 {
-    private const string UNIT_DANSANTE = '10';
-    private const string UNIT_OB_BRANDS = '11';
+    private const string UNIT = '10';
     private const string VAT_ID = '2';
 
     public function __construct(
@@ -30,9 +29,9 @@ class CreateAfasOrderFromIncomingOrder
             integrationLog: $integrationLog,
         );
 
-        $orderNumber = $this->afasOrderNumber($response);
+        $orderNumber = data_get($response, 'OrNu');
 
-        if ($orderNumber === null) {
+        if (!is_string($orderNumber) && !is_numeric($orderNumber)) {
             if ($integrationLog) {
                 $this->logger->webhookCompletedWithWarning(
                     log: $integrationLog,
@@ -179,10 +178,9 @@ class CreateAfasOrderFromIncomingOrder
                     ],
                     'Fields'  => [
                         'DbId'  => $order['relation_id'],
-                        'DlAd'  => $order['shipping_address']['id'],
+                        'DelAd' => $order['shipping_address']['id'],
                         'War'   => $this->warehouseCode($order),
-                        'Unit'  => $this->unitForCompany($order),
-                        'Fref'  => (string)$order['id'],
+                        'Unit'  => self::UNIT,
                         'InvAd' => $order['billing_address']['id'] ?? '',
                     ],
                 ],
@@ -206,46 +204,12 @@ class CreateAfasOrderFromIncomingOrder
     {
         $company = $order['company'] ?? '';
 
-        if (!is_string($company)) {
+        if (! is_string($company)) {
             return '50';
         }
 
         return strtolower(trim($company)) === 'rucanor'
             ? 'OB-01'
             : '50';
-    }
-
-    private function afasOrderNumber(array $response): ?string
-    {
-        $orderNumber = data_get($response, 'results.FbSales.OrNu');
-
-        if (!is_string($orderNumber) && !is_numeric($orderNumber)) {
-            $orderNumber = data_get($response, 'OrNu');
-        }
-
-        if (!is_string($orderNumber) && !is_numeric($orderNumber)) {
-            return null;
-        }
-
-        return (string)$orderNumber;
-    }
-
-    private function unitForCompany(array $order): string
-    {
-        $company = $order['company'] ?? '';
-
-        if (!is_string($company)) {
-            return self::UNIT_DANSANTE;
-        }
-
-        return match (strtolower(trim($company))) {
-            'rucanor',
-            'ob-brands',
-            'ob brands' => self::UNIT_OB_BRANDS,
-
-            'dansante' => self::UNIT_DANSANTE,
-
-            default => self::UNIT_DANSANTE,
-        };
     }
 }
