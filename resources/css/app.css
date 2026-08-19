@@ -1,0 +1,49 @@
+@import 'tailwindcss';
+
+@source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
+@source '../../storage/framework/views/*.php';
+
+@theme {
+    --font-sans: 'Instrument Sans', ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji', 'Segoe UI Emoji',
+        'Segoe UI Symbol', 'Noto Color Emoji';
+}
+
+@layer components {
+    input[type="text"],
+    input[type="email"],
+    input[type="password"],
+    input[type="number"],
+    input[type="search"],
+    input[type="date"],
+    input[type="datetime-local"],
+    input[type="url"],
+    select,
+    textarea {
+        @apply w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 shadow-sm;
+        @apply placeholder:text-gray-400;
+        @apply focus:border-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-600/20;
+        @apply dark:border-gray-700 dark:bg-gray-950 dark:text-gray-100 dark:placeholder:text-gray-500;
+        @apply dark:focus:border-blue-500 dark:focus:ring-blue-500/20;
+    }
+
+    label {
+        @apply text-sm font-medium text-gray-700 dark:text-gray-300;
+    }
+
+    textarea {
+        @apply min-h-32;
+    }
+
+    select:not([multiple]) {
+        @apply appearance-none pr-10;
+
+        background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 20 20' fill='none' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M6 8l4 4 4-4' stroke='%236b7280' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3e%3c/svg%3e");
+        background-position: right 0.75rem center;
+        background-repeat: no-repeat;
+        background-size: 1rem 1rem;
+    }
+
+    .dark select:not([multiple]) {
+        background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 20 20' fill='none' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M6 8l4 4 4-4' stroke='%239ca3af' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3e%3c/svg%3e");
+    }
+}
