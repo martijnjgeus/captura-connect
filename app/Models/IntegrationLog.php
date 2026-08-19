@@ -20,6 +20,8 @@ class IntegrationLog extends Model
         'updates_failed',
         'error_message',
         'warning',
+        'afas',
+        'exception',
     ];
 
     protected $casts = [

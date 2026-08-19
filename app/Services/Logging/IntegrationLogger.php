@@ -70,9 +70,21 @@ class IntegrationLogger
 
     public function webhookFailed(IntegrationLog $log, Throwable $exception): void
     {
+        $currentResultBody = is_array($log->result_body)
+            ? $log->result_body
+            : [];
+
         $log->update([
             'status'        => 'failed',
             'error_message' => $exception->getMessage(),
+            'result_body'   => array_merge($currentResultBody, [
+                'exception' => [
+                    'class'   => $exception::class,
+                    'message' => $exception->getMessage(),
+                    'file'    => $exception->getFile(),
+                    'line'    => $exception->getLine(),
+                ],
+            ]),
         ]);
     }
 
@@ -126,13 +138,27 @@ class IntegrationLogger
 
     private function responseBody(Response $response): mixed
     {
-        $json = $response->json();
+        $rawBody = $response->body();
 
-        if ($json !== null) {
-            return $json;
+        try {
+            $jsonBody = $response->json();
+        } catch (Throwable) {
+            $jsonBody = null;
         }
 
-        return $response->body();
+        if ($jsonBody !== null) {
+            return $jsonBody;
+        }
+
+        if ($rawBody !== '') {
+            return $rawBody;
+        }
+
+        return [
+            '_empty_body' => true,
+            'status'      => $response->status(),
+            'reason'      => $response->reason(),
+        ];
     }
 
     public function webhookFinished(
@@ -151,32 +177,43 @@ class IntegrationLogger
     public function webhookAfasResponse(IntegrationLog $log, Response $response): void
     {
         $successful = $response->successful();
+        $rawBody    = $response->body();
+
+        $currentResultBody = is_array($log->result_body)
+            ? $log->result_body
+            : [];
 
         $log->update([
             'status'        => $successful ? 'afas_response_received' : 'failed',
             'http_status'   => $response->status(),
-            'result_body'   => [
+            'result_body'   => array_merge($currentResultBody, [
                 'afas' => [
-                    'successful' => $successful,
-                    'status'     => $response->status(),
-                    'body'       => $this->responseBody($response),
+                    'successful'    => $successful,
+                    'status'        => $response->status(),
+                    'reason_phrase' => $response->reason(),
+                    'content_type'  => $response->header('Content-Type'),
+                    'body_length'   => strlen($rawBody),
+                    'body_preview'  => substr($rawBody, 0, 5000),
+                    'body_base64'   => base64_encode($rawBody),
+                    'headers'       => $response->headers(),
                 ],
-            ],
-            'error_message' => $successful ? null : $response->body(),
+            ]),
+            'error_message' => $successful ? null : substr($rawBody, 0, 1000),
         ]);
     }
 
     public function webhookCompletedWithWarning(
         IntegrationLog $log,
-        string $message,
-        array $extra = [],
-    ): void {
+        string         $message,
+        array          $extra = [],
+    ): void
+    {
         $currentResultBody = $log->result_body ?? [];
 
         $log->update([
-            'status' => 'completed_with_errors',
+            'status'        => 'completed_with_errors',
             'error_message' => $message,
-            'result_body' => array_merge($currentResultBody, [
+            'result_body'   => array_merge($currentResultBody, [
                 'warning' => [
                     'message' => $message,
                     ...$extra,

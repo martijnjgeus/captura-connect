@@ -76,6 +76,12 @@ class GoedgepicktStockClient
             $currentPage = (int)$response->json('pageInfo.currentPage', $page);
             $lastPage    = (int)$response->json('pageInfo.lastPage', $page);
 
+            Log::info('GoedGepickt AFAS stock sync fetch progress.', [
+                'current_page'       => $currentPage,
+                'last_page'          => $lastPage,
+                'products_collected' => count($stock),
+            ]);
+
             if ($currentPage >= $lastPage) {
                 break;
             }
@@ -104,7 +110,7 @@ class GoedgepicktStockClient
         foreach ($mutations as $mutation) {
             $uuid = $mutation['product_uuid'] ?? null;
 
-            if (! is_string($uuid) || $uuid === '') {
+            if (!is_string($uuid) || $uuid === '') {
                 $result['failed']++;
 
                 $result['failed_items'][] = [
@@ -199,6 +205,105 @@ class GoedgepicktStockClient
         }
 
         return $result;
+    }
+
+    public function getProductsForAfasStockSync(array $excludedSupplierUuids = []): array
+    {
+        $page = 1;
+        $products = [];
+
+        while (true) {
+            $response = $this->goedgepicktGet(
+                config('api.goedgepickt.products_endpoint'),
+                [
+                    'perPage' => 100,
+                    'page' => $page,
+                ]
+            );
+
+            if ($response->failed()) {
+                Log::error('Could not fetch GoedGepickt products for AFAS stock sync.', [
+                    'page' => $page,
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                ]);
+
+                throw new RuntimeException('Could not fetch GoedGepickt products for AFAS stock sync.');
+            }
+
+            $items = $response->json('items', []);
+
+            if (! is_array($items)) {
+                throw new RuntimeException('GoedGepickt products response does not contain items.');
+            }
+
+            foreach ($items as $product) {
+                if (! is_array($product)) {
+                    continue;
+                }
+
+                $supplierUuid = trim((string) data_get($product, 'supplier.supplierUUID', ''));
+
+                if ($supplierUuid !== '' && in_array($supplierUuid, $excludedSupplierUuids, true)) {
+                    continue;
+                }
+
+                $uuid = trim((string) ($product['uuid'] ?? ''));
+                $ean = $this->normalizeEan((string) ($product['ean'] ?? $product['barcode'] ?? ''));
+                $articleCode = $this->productAttributeValue($product, 'Artikelcode');
+
+                if ($uuid === '' || $articleCode === '') {
+                    continue;
+                }
+
+                $afasArticle = $this->parseAfasArticleCode($articleCode);
+
+                if ($afasArticle === null) {
+                    Log::warning('GoedGepickt product skipped because article code cannot be parsed for AFAS.', [
+                        'uuid' => $uuid,
+                        'article_code' => $articleCode,
+                    ]);
+
+                    continue;
+                }
+
+                $products[] = [
+                    'uuid' => $uuid,
+                    'goedgepickt_url' => $this->productUrl($uuid),
+                    'ean' => $ean,
+                    'Artikelcode' => $articleCode,
+                    'item_code' => $afasArticle['item_code'],
+                    'dimension_1' => $afasArticle['dimension_1'],
+                    'dimension_2' => $afasArticle['dimension_2'],
+                    'stock' => (int) data_get($product, 'stock.freeStock', 0),
+                    'supplier_uuid' => $supplierUuid,
+                    'supplier_name' => trim((string) data_get($product, 'supplier.supplierName', '')),
+                ];
+            }
+
+            $currentPage = (int) $response->json('pageInfo.currentPage', $page);
+            $lastPage = (int) $response->json('pageInfo.lastPage', $page);
+
+            Log::info('GoedGepickt AFAS stock sync fetch progress.', [
+                'current_page' => $currentPage,
+                'last_page' => $lastPage,
+                'products_collected' => count($products),
+            ]);
+
+            if ($currentPage >= $lastPage) {
+                break;
+            }
+
+            $page = $currentPage + 1;
+        }
+
+        Log::info('GoedGepickt products fetched for AFAS stock sync.', [
+            'product_count' => count($products),
+            'pages' => $page,
+            'excluded_supplier_uuids' => $excludedSupplierUuids,
+        ]);
+
+        return $products;
     }
 
     private function stockMutationUrl(string $uuid): string
@@ -365,5 +470,47 @@ class GoedgepicktStockClient
         }
 
         return rtrim($appUrl, '/') . '/products/view/' . $uuid;
+    }
+
+    private function parseAfasArticleCode(string $articleCode): ?array
+    {
+        $parts = array_map('trim', explode('-', $articleCode, 3));
+
+        if (count($parts) !== 3) {
+            return null;
+        }
+
+        if ($parts[0] === '' || $parts[1] === '' || $parts[2] === '') {
+            return null;
+        }
+
+        return [
+            'item_code'   => $parts[0],
+            'dimension_1' => $parts[1],
+            'dimension_2' => $parts[2],
+        ];
+    }
+
+    private function productAttributeValue(array $product, string $name): string
+    {
+        $attributes = $product['productAttributes'] ?? [];
+
+        if (! is_array($attributes)) {
+            return '';
+        }
+
+        foreach ($attributes as $attribute) {
+            if (! is_array($attribute)) {
+                continue;
+            }
+
+            if (($attribute['name'] ?? null) !== $name) {
+                continue;
+            }
+
+            return trim((string) ($attribute['value'] ?? ''));
+        }
+
+        return '';
     }
 }

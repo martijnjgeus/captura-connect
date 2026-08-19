@@ -121,11 +121,26 @@ class CreateAfasOrderFromIncomingOrder
         }
 
         if ($response->failed()) {
+            $rawBody = $response->body();
+
+            Log::error('AFAS returned an error.', [
+                'status'        => $response->status(),
+                'reason_phrase' => $response->reason(),
+                'content_type'  => $response->header('Content-Type'),
+                'body_length'   => strlen($rawBody),
+                'body_preview'  => substr($rawBody, 0, 5000),
+                'body_base64'   => base64_encode($rawBody),
+            ]);
+
             throw new HttpResponseException(
                 response()->json([
-                    'message'       => 'AFAS returned an error.',
-                    'afas_status'   => $response->status(),
-                    'afas_response' => $response->json() ?? $response->body(),
+                    'message'           => 'AFAS returned an error.',
+                    'afas_status'       => $response->status(),
+                    'afas_reason'       => $response->reason(),
+                    'afas_content_type' => $response->header('Content-Type'),
+                    'afas_body_length'  => strlen($rawBody),
+                    'afas_body_preview' => substr($rawBody, 0, 5000),
+                    'afas_body_base64'  => base64_encode($rawBody),
                 ], 502)
             );
         }
@@ -204,7 +219,7 @@ class CreateAfasOrderFromIncomingOrder
     {
         $company = $order['company'] ?? '';
 
-        if (! is_string($company)) {
+        if (!is_string($company)) {
             return '50';
         }
 

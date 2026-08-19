@@ -4,6 +4,24 @@
 ])
 
 @section('content')
+    @php
+        $prettyJson = static function ($value): string {
+            $json = json_encode(
+                $value,
+                JSON_PRETTY_PRINT
+                | JSON_UNESCAPED_UNICODE
+                | JSON_UNESCAPED_SLASHES
+                | JSON_INVALID_UTF8_SUBSTITUTE
+                | JSON_PARTIAL_OUTPUT_ON_ERROR
+            );
+
+            if ($json !== false) {
+                return $json;
+            }
+
+            return print_r($value, true);
+        };
+    @endphp
     <div class="space-y-6">
         <div>
             <a
@@ -98,8 +116,70 @@
                         </div>
                     @endif
 
+                    @if ($title === 'Result' && is_array($body))
+                        <div class="grid gap-4 md:grid-cols-4">
+                            @foreach ([
+                                'Dry run' => data_get($body, 'dry_run') ? 'Yes' : 'No',
+                                'Lines built' => data_get($body, 'lines_built', 0),
+                                'AFAS attempted' => data_get($body, 'afas_attempted', 0),
+                                'AFAS failed' => data_get($body, 'afas_failed', 0),
+                            ] as $label => $value)
+                                <div class="rounded-md bg-gray-50 p-4 dark:bg-gray-950 dark:ring-1 dark:ring-gray-800">
+                                    <div class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                                        {{ $label }}
+                                    </div>
+                                    <div class="mt-1 text-sm font-semibold text-gray-900 dark:text-gray-100">
+                                        {{ $value }}
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+
+                        @if (! empty($body['afas_failed_chunks']))
+                            <div class="overflow-hidden rounded-md border border-red-200 dark:border-red-900">
+                                <div class="bg-red-50 px-4 py-3 text-sm font-semibold text-red-800 dark:bg-red-500/10 dark:text-red-300">
+                                    AFAS failed chunks
+                                </div>
+
+                                <div class="divide-y divide-red-100 dark:divide-red-900">
+                                    @foreach ($body['afas_failed_chunks'] as $chunk)
+                                        <details class="p-4" open>
+                                            <summary class="cursor-pointer text-sm font-semibold text-gray-900 dark:text-gray-100">
+                                                Chunk {{ $chunk['chunk_index'] ?? '-' }}
+                                                —
+                                                Status {{ $chunk['status'] ?? '-' }}
+                                                —
+                                                {{ $chunk['lines_count'] ?? 0 }} lines
+                                            </summary>
+
+                                            <div class="mt-4 space-y-4">
+                                                @if (! empty($chunk['url']))
+                                                    <div>
+                                                        <div class="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">URL</div>
+                                                        <div class="mt-1 break-all font-mono text-sm text-gray-900 dark:text-gray-100">
+                                                            {{ $chunk['url'] }}
+                                                        </div>
+                                                    </div>
+                                                @endif
+
+                                                <div>
+                                                    <div class="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">AFAS response</div>
+                                                    <pre class="mt-1 max-h-96 overflow-auto rounded-md bg-gray-950 p-4 text-xs text-gray-100"><code>{{ $prettyJson($chunk['response_body'] ?? $chunk['response_raw'] ?? null) }}</code></pre>
+                                                </div>
+
+                                                <div>
+                                                    <div class="text-xs font-semibold uppercase text-gray-500 dark:text-gray-400">Sample request lines</div>
+                                                    <pre class="mt-1 max-h-96 overflow-auto rounded-md bg-gray-950 p-4 text-xs text-gray-100"><code>{{ $prettyJson($chunk['sample_lines'] ?? []) }}</code></pre>
+                                                </div>
+                                            </div>
+                                        </details>
+                                    @endforeach
+                                </div>
+                            </div>
+                        @endif
+                    @endif
                     <div class="overflow-hidden rounded-md bg-gray-950 ring-1 ring-gray-800">
-                        <pre class="max-h-[600px] overflow-auto p-6 text-sm leading-6 text-gray-100"><code>{{ json_encode($body, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) }}</code></pre>
+                        <pre class="max-h-[600px] overflow-auto p-6 text-sm leading-6 text-gray-100"><code>{{ $prettyJson($body) }}</code></pre>
                     </div>
                 </div>
             </details>
