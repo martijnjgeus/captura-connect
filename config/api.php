@@ -8,6 +8,58 @@ return [
     'afas' => [
         'api_url' => env('AFAS_API_URL'),
         'api_key' => env('AFAS_API_KEY'),
+
+        'stock_sync' => [
+            'connector'  => env('AFAS_STOCK_SYNC_CONNECTOR', 'FbStock'),
+            'chunk_size' => (int)env('AFAS_STOCK_SYNC_CHUNK_SIZE', 100),
+
+            'excluded_supplier_uuids' => [
+                env('VERWIMP_GOEDGEPICKT_SUPPLIER_UUID'),
+                env('HOOP_FIETSEN_GOEDGEPICKT_SUPPLIER_UUID'),
+            ],
+
+            'warehouse_rules' => [
+                [
+                    'label'         => 'OB-Brands',
+                    'supplier_uuid' => env('AFAS_STOCK_SYNC_OB_BRANDS_SUPPLIER_UUID'),
+                    'warehouse'     => env('AFAS_STOCK_SYNC_OB_BRANDS_WAREHOUSE'),
+                ],
+                [
+                    'label'         => 'Dansante',
+                    'supplier_uuid' => env('AFAS_STOCK_SYNC_DANSANTE_SUPPLIER_UUID'),
+                    'warehouse'     => env('AFAS_STOCK_SYNC_DANSANTE_WAREHOUSE'),
+                ],
+            ],
+
+            'default_warehouse' => env('AFAS_STOCK_SYNC_DEFAULT_WAREHOUSE'),
+        ],
+
+        'delivery_note_sync' => [
+            'get_connector' => env('AFAS_DELIVERY_NOTE_GET_CONNECTOR', 'MOT_pakbonregels_alle'),
+
+            'filterfieldids' => env(
+                'AFAS_DELIVERY_NOTE_FILTER_FIELD_IDS',
+                'Distributie_date_time,Administratie;Administratie;Administratie,Pakbonstatus'
+            ),
+
+            'filtervalues' => env(
+                'AFAS_DELIVERY_NOTE_FILTER_VALUES',
+                '[is leeg],10;11;50,Afgehandeld'
+            ),
+
+            'operatortypes' => env(
+                'AFAS_DELIVERY_NOTE_FILTER_OPERATOR_TYPES',
+                '8,1;1;1,7'
+            ),
+
+            'update_connector' => env('AFAS_DELIVERY_NOTE_UPDATE_CONNECTOR'),
+            'update_key_field' => env('AFAS_DELIVERY_NOTE_UPDATE_KEY_FIELD'),
+            'update_method'    => env('AFAS_DELIVERY_NOTE_UPDATE_METHOD', 'PUT'),
+
+            'processed_field'           => env('AFAS_DELIVERY_NOTE_PROCESSED_FIELD', 'Distributie_date_time'),
+            'processed_value'           => env('AFAS_DELIVERY_NOTE_PROCESSED_VALUE', 'now'),
+            'processed_datetime_format' => env('AFAS_DELIVERY_NOTE_PROCESSED_DATETIME_FORMAT', 'Y-m-d\TH:i:s'),
+        ],
     ],
 
     'goedgepickt' => [
@@ -19,6 +71,19 @@ return [
             'GOEDGEPICKT_STOCK_MUTATION_ENDPOINT',
             '/products/{uuid}/stock-mutation'
         ),
+        'orders_endpoint'         => env('GOEDGEPICKT_ORDERS_ENDPOINT', '/orders'),
         'app_url'                 => env('GOEDGEPICKT_APP_URL', 'https://captura-business-bikes.goedgepickt.nl'),
+
+        'orders_webshops' => [
+            'dansante' => [
+                'administration' => env('AFAS_ORDERS_DANSANTE_ADMINISTRATION', '10'),
+                'webshop_uuid'   => env('GOEDGEPICKT_ORDERS_DANSANTE_WEBSHOP_UUID'),
+            ],
+
+            'ob_brands' => [
+                'administration' => env('AFAS_ORDERS_OB_BRANDS_ADMINISTRATION', '11'),
+                'webshop_uuid'   => env('GOEDGEPICKT_ORDERS_OB_BRANDS_WEBSHOP_UUID'),
+            ],
+        ],
     ],
 ];
