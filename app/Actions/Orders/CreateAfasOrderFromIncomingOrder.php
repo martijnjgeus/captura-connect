@@ -11,7 +11,8 @@ use RuntimeException;
 
 class CreateAfasOrderFromIncomingOrder
 {
-    private const string UNIT = '10';
+    private const string UNIT_DANSANTE = '10';
+    private const string UNIT_OB_BRANDS = '11';
     private const string VAT_ID = '2';
 
     public function __construct(
@@ -29,9 +30,9 @@ class CreateAfasOrderFromIncomingOrder
             integrationLog: $integrationLog,
         );
 
-        $orderNumber = data_get($response, 'OrNu');
+        $orderNumber = $this->afasOrderNumber($response);
 
-        if (!is_string($orderNumber) && !is_numeric($orderNumber)) {
+        if ($orderNumber === null) {
             if ($integrationLog) {
                 $this->logger->webhookCompletedWithWarning(
                     log: $integrationLog,
@@ -121,26 +122,11 @@ class CreateAfasOrderFromIncomingOrder
         }
 
         if ($response->failed()) {
-            $rawBody = $response->body();
-
-            Log::error('AFAS returned an error.', [
-                'status'        => $response->status(),
-                'reason_phrase' => $response->reason(),
-                'content_type'  => $response->header('Content-Type'),
-                'body_length'   => strlen($rawBody),
-                'body_preview'  => substr($rawBody, 0, 5000),
-                'body_base64'   => base64_encode($rawBody),
-            ]);
-
             throw new HttpResponseException(
                 response()->json([
-                    'message'           => 'AFAS returned an error.',
-                    'afas_status'       => $response->status(),
-                    'afas_reason'       => $response->reason(),
-                    'afas_content_type' => $response->header('Content-Type'),
-                    'afas_body_length'  => strlen($rawBody),
-                    'afas_body_preview' => substr($rawBody, 0, 5000),
-                    'afas_body_base64'  => base64_encode($rawBody),
+                    'message'       => 'AFAS returned an error.',
+                    'afas_status'   => $response->status(),
+                    'afas_response' => $response->json() ?? $response->body(),
                 ], 502)
             );
         }
@@ -193,9 +179,10 @@ class CreateAfasOrderFromIncomingOrder
                     ],
                     'Fields'  => [
                         'DbId'  => $order['relation_id'],
-                        'DelAd' => $order['shipping_address']['id'],
+                        'DlAd'  => $order['shipping_address']['id'],
                         'War'   => $this->warehouseCode($order),
-                        'Unit'  => self::UNIT,
+                        'Unit'  => $this->unitForCompany($order),
+                        'Fref'  => (string)$order['id'],
                         'InvAd' => $order['billing_address']['id'] ?? '',
                     ],
                 ],
@@ -226,5 +213,39 @@ class CreateAfasOrderFromIncomingOrder
         return strtolower(trim($company)) === 'rucanor'
             ? 'OB-01'
             : '50';
+    }
+
+    private function afasOrderNumber(array $response): ?string
+    {
+        $orderNumber = data_get($response, 'results.FbSales.OrNu');
+
+        if (!is_string($orderNumber) && !is_numeric($orderNumber)) {
+            $orderNumber = data_get($response, 'OrNu');
+        }
+
+        if (!is_string($orderNumber) && !is_numeric($orderNumber)) {
+            return null;
+        }
+
+        return (string)$orderNumber;
+    }
+
+    private function unitForCompany(array $order): string
+    {
+        $company = $order['company'] ?? '';
+
+        if (!is_string($company)) {
+            return self::UNIT_DANSANTE;
+        }
+
+        return match (strtolower(trim($company))) {
+            'rucanor',
+            'ob-brands',
+            'ob brands' => self::UNIT_OB_BRANDS,
+
+            'dansante' => self::UNIT_DANSANTE,
+
+            default => self::UNIT_DANSANTE,
+        };
     }
 }
