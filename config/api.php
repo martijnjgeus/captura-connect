@@ -129,4 +129,26 @@ return [
         'rucanor_ean_company'  => env('CODE_ALLOCATOR_RUCANOR_EAN_COMPANY'),
         'papillon_ean_company' => env('CODE_ALLOCATOR_PAPILLON_EAN_COMPANY'),
     ],
+
+    'shopify' => [
+        'shop_domain'            => env('SHOPIFY_SHOP_DOMAIN'),
+        'admin_api_access_token' => env('SHOPIFY_ADMIN_API_ACCESS_TOKEN'),
+        'api_version'            => env('SHOPIFY_API_VERSION', '2026-07'),
+
+        'products' => [
+            'default_status' => env('SHOPIFY_PRODUCT_SYNC_DEFAULT_STATUS', 'DRAFT'),
+            'default_price'  => env('SHOPIFY_PRODUCT_SYNC_DEFAULT_PRICE', '0.00'),
+
+            'source_ean_company' => env(
+                'SHOPIFY_PRODUCT_SYNC_SOURCE_EAN_COMPANY',
+                env('CODE_ALLOCATOR_DEFAULT_EAN_COMPANY')
+            ),
+
+            'dimension_type_names' => [
+                'BLTSHK'  => 'Maat',
+                'DANSall' => 'Kleur',
+                'FORall'  => 'Kleur',
+            ],
+        ],
+    ],
 ];
