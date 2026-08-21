@@ -73,6 +73,25 @@ return [
             'dimension_2_field' => 'Dimensie_2',
             'brand_code_field'  => 'Item_merk_code',
             'brand_name_field'  => 'Item_merk_omschrijving',
+
+            'update_connector' => env('AFAS_PRODUCT_VARIANT_SYNC_UPDATE_CONNECTOR', 'FbUpdateAdB'),
+            'update_method'    => env('AFAS_PRODUCT_VARIANT_SYNC_UPDATE_METHOD', 'PUT'),
+
+            'update_item_type_field' => 'VaIt',
+            'update_item_type_value' => '2',
+
+            'update_item_code_field'   => 'ItCd',
+            'update_dimension_1_field' => 'StL1',
+            'update_dimension_2_field' => 'StL2',
+
+            'update_barcode_type_field' => 'VaBc',
+            'update_barcode_type_value' => '3',
+            'update_barcode_field'      => 'BaCo',
+
+            'update_cms_id_field' => env(
+                'AFAS_PRODUCT_VARIANT_SYNC_CMS_ID_UPDATE_FIELD',
+                'U786FD90C040B41329F2BF4A90100D4C6'
+            ),
         ],
     ],
 
