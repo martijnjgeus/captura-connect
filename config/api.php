@@ -102,10 +102,12 @@ return [
     ],
 
     'code_allocator' => [
-        'url'                 => env('CODE_ALLOCATOR_URL', 'https://code-allocator.captura-group.com/api/codes/request'),
-        'staging_url'         => env('CODE_ALLOCATOR_STAGING_URL', 'https://codealloca9523.builtwithrocket.new/api/codes/request'),
-        'use_staging'         => env('CODE_ALLOCATOR_USE_STAGING', true),
-        'token'               => env('CODE_ALLOCATOR_TOKEN'),
-        'default_ean_company' => env('CODE_ALLOCATOR_DEFAULT_EAN_COMPANY'),
+        'url'                  => env('CODE_ALLOCATOR_URL', 'https://code-allocator.captura-group.com/api/codes/request'),
+        'staging_url'          => env('CODE_ALLOCATOR_STAGING_URL', 'https://codealloca9523.builtwithrocket.new/api/codes/request'),
+        'use_staging'          => env('CODE_ALLOCATOR_USE_STAGING', true),
+        'token'                => env('CODE_ALLOCATOR_TOKEN'),
+        'default_ean_company'  => env('CODE_ALLOCATOR_DEFAULT_EAN_COMPANY'),
+        'rucanor_ean_company'  => env('CODE_ALLOCATOR_RUCANOR_EAN_COMPANY'),
+        'papillon_ean_company' => env('CODE_ALLOCATOR_PAPILLON_EAN_COMPANY'),
     ],
 ];
