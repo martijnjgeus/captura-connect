@@ -63,8 +63,7 @@ return [
 
         'product_variant_sync' => [
             'get_connector' => env('AFAS_PRODUCT_VARIANT_SYNC_GET_CONNECTOR'),
-
-            'page_size' => env('AFAS_PRODUCT_VARIANT_SYNC_PAGE_SIZE', 100),
+            'page_size'     => env('AFAS_PRODUCT_VARIANT_SYNC_PAGE_SIZE', 100),
 
             'created_at_field'  => 'Aangemaakt_op',
             'cms_id_field'      => 'CMS_ID',
@@ -72,8 +71,8 @@ return [
             'item_code_field'   => 'Itemcode',
             'dimension_1_field' => 'Dimensie_1',
             'dimension_2_field' => 'Dimensie_2',
-
-            'waiting_for_ean_company_status' => 'waiting_for_ean_company',
+            'brand_code_field'  => 'Item_merk_code',
+            'brand_name_field'  => 'Item_merk_omschrijving',
         ],
     ],
 
@@ -103,15 +102,10 @@ return [
     ],
 
     'code_allocator' => [
-        'url'         => env('CODE_ALLOCATOR_URL', 'https://code-allocator.captura-group.com/api/codes/request'),
-        'staging_url' => env('CODE_ALLOCATOR_STAGING_URL', 'https://codealloca9523.builtwithrocket.new/api/codes/request'),
-        'use_staging' => env('CODE_ALLOCATOR_USE_STAGING', true),
-        'token'       => env('CODE_ALLOCATOR_TOKEN'),
-
-        'ean_company_map' => [
-            'CAPTURA_BIKES_COM' => env('CODE_ALLOCATOR_EAN_COMPANY_CAPTURA_BIKES_COM'),
-            'OB_BRANDS'         => env('CODE_ALLOCATOR_EAN_COMPANY_OB_BRANDS'),
-            'PAPILLON'          => env('CODE_ALLOCATOR_EAN_COMPANY_PAPILLON'),
-        ],
+        'url'                 => env('CODE_ALLOCATOR_URL', 'https://code-allocator.captura-group.com/api/codes/request'),
+        'staging_url'         => env('CODE_ALLOCATOR_STAGING_URL', 'https://codealloca9523.builtwithrocket.new/api/codes/request'),
+        'use_staging'         => env('CODE_ALLOCATOR_USE_STAGING', true),
+        'token'               => env('CODE_ALLOCATOR_TOKEN'),
+        'default_ean_company' => env('CODE_ALLOCATOR_DEFAULT_EAN_COMPANY'),
     ],
 ];
