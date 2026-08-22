@@ -60,6 +60,39 @@ return [
             'processed_value'           => env('AFAS_DELIVERY_NOTE_PROCESSED_VALUE', 'now'),
             'processed_datetime_format' => env('AFAS_DELIVERY_NOTE_PROCESSED_DATETIME_FORMAT', 'Y-m-d\TH:i:s'),
         ],
+
+        'product_variant_sync' => [
+            'get_connector' => env('AFAS_PRODUCT_VARIANT_SYNC_GET_CONNECTOR'),
+            'page_size'     => env('AFAS_PRODUCT_VARIANT_SYNC_PAGE_SIZE', 100),
+
+            'created_at_field'  => 'Aangemaakt_op',
+            'cms_id_field'      => 'CMS_ID',
+            'barcode_field'     => 'Barcode_opgschoond',
+            'item_code_field'   => 'Itemcode',
+            'dimension_1_field' => 'Dimensie_1',
+            'dimension_2_field' => 'Dimensie_2',
+            'brand_code_field'  => 'Item_merk_code',
+            'brand_name_field'  => 'Item_merk_omschrijving',
+
+            'update_connector' => env('AFAS_PRODUCT_VARIANT_SYNC_UPDATE_CONNECTOR', 'FbUpdateAdB'),
+            'update_method'    => env('AFAS_PRODUCT_VARIANT_SYNC_UPDATE_METHOD', 'PUT'),
+
+            'update_item_type_field' => 'VaIt',
+            'update_item_type_value' => '2',
+
+            'update_item_code_field'   => 'ItCd',
+            'update_dimension_1_field' => 'StL1',
+            'update_dimension_2_field' => 'StL2',
+
+            'update_barcode_type_field' => 'VaBc',
+            'update_barcode_type_value' => '3',
+            'update_barcode_field'      => 'BaCo',
+
+            'update_cms_id_field' => env(
+                'AFAS_PRODUCT_VARIANT_SYNC_CMS_ID_UPDATE_FIELD',
+                'U786FD90C040B41329F2BF4A90100D4C6'
+            ),
+        ],
     ],
 
     'goedgepickt' => [
@@ -83,6 +116,46 @@ return [
             'ob_brands' => [
                 'administration' => env('AFAS_ORDERS_OB_BRANDS_ADMINISTRATION', '11'),
                 'webshop_uuid'   => env('GOEDGEPICKT_ORDERS_OB_BRANDS_WEBSHOP_UUID'),
+            ],
+        ],
+    ],
+
+    'code_allocator' => [
+        'url'                  => env('CODE_ALLOCATOR_URL', 'https://code-allocator.captura-group.com/api/codes/request'),
+        'staging_url'          => env('CODE_ALLOCATOR_STAGING_URL', 'https://codealloca9523.builtwithrocket.new/api/codes/request'),
+        'use_staging'          => env('CODE_ALLOCATOR_USE_STAGING', true),
+        'token'                => env('CODE_ALLOCATOR_TOKEN'),
+        'default_ean_company'  => env('CODE_ALLOCATOR_DEFAULT_EAN_COMPANY'),
+        'rucanor_ean_company'  => env('CODE_ALLOCATOR_RUCANOR_EAN_COMPANY'),
+        'papillon_ean_company' => env('CODE_ALLOCATOR_PAPILLON_EAN_COMPANY'),
+    ],
+
+    'shopify' => [
+        'shop_domain'            => env('SHOPIFY_SHOP_DOMAIN'),
+        'client_id'              => env('SHOPIFY_CLIENT_ID'),
+        'client_secret'          => env('SHOPIFY_CLIENT_SECRET'),
+
+        /*
+         * Optional fallback for old/admin-created custom app tokens.
+         * Leave empty when using Client ID + Client Secret.
+         */
+        'admin_api_access_token' => env('SHOPIFY_ADMIN_API_ACCESS_TOKEN'),
+
+        'api_version' => env('SHOPIFY_API_VERSION', '2026-07'),
+
+        'products' => [
+            'default_status' => env('SHOPIFY_PRODUCT_SYNC_DEFAULT_STATUS', 'DRAFT'),
+            'default_price'  => env('SHOPIFY_PRODUCT_SYNC_DEFAULT_PRICE', '0.00'),
+
+            'source_ean_company' => env(
+                'SHOPIFY_PRODUCT_SYNC_SOURCE_EAN_COMPANY',
+                env('CODE_ALLOCATOR_DEFAULT_EAN_COMPANY')
+            ),
+
+            'dimension_type_names' => [
+                'BLTSHK'  => 'Maat',
+                'DANSall' => 'Kleur',
+                'FORall'  => 'Kleur',
             ],
         ],
     ],
