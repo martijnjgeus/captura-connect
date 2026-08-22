@@ -132,8 +132,16 @@ return [
 
     'shopify' => [
         'shop_domain'            => env('SHOPIFY_SHOP_DOMAIN'),
+        'client_id'              => env('SHOPIFY_CLIENT_ID'),
+        'client_secret'          => env('SHOPIFY_CLIENT_SECRET'),
+
+        /*
+         * Optional fallback for old/admin-created custom app tokens.
+         * Leave empty when using Client ID + Client Secret.
+         */
         'admin_api_access_token' => env('SHOPIFY_ADMIN_API_ACCESS_TOKEN'),
-        'api_version'            => env('SHOPIFY_API_VERSION', '2026-07'),
+
+        'api_version' => env('SHOPIFY_API_VERSION', '2026-07'),
 
         'products' => [
             'default_status' => env('SHOPIFY_PRODUCT_SYNC_DEFAULT_STATUS', 'DRAFT'),

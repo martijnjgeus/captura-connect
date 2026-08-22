@@ -2,6 +2,7 @@
 
 namespace App\Services\Shopify;
 
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Str;
 use RuntimeException;
@@ -194,6 +195,12 @@ class ShopifyProductClient
                             name
                             value
                         }
+                        inventoryItem {
+                            id
+                            sku
+                            tracked
+                            requiresShipping
+                        }
                     }
                     userErrors {
                         field
@@ -244,7 +251,7 @@ class ShopifyProductClient
             ->asJson()
             ->acceptJson()
             ->withHeader('X-Shopify-Access-Token', $this->accessToken())
-            ->post($this->endpoint(), [
+            ->post($this->graphqlEndpoint(), [
                 'query'     => $query,
                 'variables' => $variables,
             ]);
@@ -274,17 +281,102 @@ class ShopifyProductClient
         return $body;
     }
 
-    private function endpoint(): string
+    private function accessToken(): string
     {
-        $shopDomain = trim((string)config('api.shopify.shop_domain'));
-        $apiVersion = trim((string)config('api.shopify.api_version', '2026-07'));
+        $staticToken = trim((string)config('api.shopify.admin_api_access_token'));
 
-        if ($shopDomain === '') {
-            throw new RuntimeException('Missing config: api.shopify.shop_domain');
+        if ($staticToken !== '') {
+            return $staticToken;
         }
+
+        return $this->clientCredentialsAccessToken();
+    }
+
+    private function clientCredentialsAccessToken(): string
+    {
+        $cacheKey = 'shopify_admin_access_token:' . $this->shopDomain();
+
+        $cachedToken = Cache::get($cacheKey);
+
+        if (is_string($cachedToken) && trim($cachedToken) !== '') {
+            return $cachedToken;
+        }
+
+        $clientId     = trim((string)config('api.shopify.client_id'));
+        $clientSecret = trim((string)config('api.shopify.client_secret'));
+
+        if ($clientId === '') {
+            throw new RuntimeException('Missing config: api.shopify.client_id');
+        }
+
+        if ($clientSecret === '') {
+            throw new RuntimeException('Missing config: api.shopify.client_secret');
+        }
+
+        $response = Http::connectTimeout(10)
+            ->timeout(60)
+            ->asForm()
+            ->acceptJson()
+            ->post($this->tokenEndpoint(), [
+                'grant_type'    => 'client_credentials',
+                'client_id'     => $clientId,
+                'client_secret' => $clientSecret,
+            ]);
+
+        $body = $response->json();
+
+        if (!$response->successful()) {
+            throw new RuntimeException(json_encode([
+                'message' => 'Shopify token request failed.',
+                'status'  => $response->status(),
+                'reason'  => $response->reason(),
+                'body'    => $body ?? $response->body(),
+            ], JSON_PRETTY_PRINT));
+        }
+
+        if (!is_array($body)) {
+            throw new RuntimeException('Shopify token endpoint returned invalid JSON.');
+        }
+
+        $accessToken = trim((string)($body['access_token'] ?? ''));
+        $expiresIn   = (int)($body['expires_in'] ?? 0);
+
+        if ($accessToken === '') {
+            throw new RuntimeException(json_encode([
+                'message' => 'Shopify token response is missing access_token.',
+                'body'    => $body,
+            ], JSON_PRETTY_PRINT));
+        }
+
+        $cacheSeconds = $expiresIn > 600 ? $expiresIn - 300 : 300;
+
+        Cache::put($cacheKey, $accessToken, now()->addSeconds($cacheSeconds));
+
+        return $accessToken;
+    }
+
+    private function graphqlEndpoint(): string
+    {
+        $apiVersion = trim((string)config('api.shopify.api_version', '2026-07'));
 
         if ($apiVersion === '') {
             throw new RuntimeException('Missing config: api.shopify.api_version');
+        }
+
+        return 'https://' . $this->shopDomain() . '/admin/api/' . $apiVersion . '/graphql.json';
+    }
+
+    private function tokenEndpoint(): string
+    {
+        return 'https://' . $this->shopDomain() . '/admin/oauth/access_token';
+    }
+
+    private function shopDomain(): string
+    {
+        $shopDomain = trim((string)config('api.shopify.shop_domain'));
+
+        if ($shopDomain === '') {
+            throw new RuntimeException('Missing config: api.shopify.shop_domain');
         }
 
         $shopDomain = Str::of($shopDomain)
@@ -293,17 +385,10 @@ class ShopifyProductClient
             ->trim('/')
             ->toString();
 
-        return 'https://' . $shopDomain . '/admin/api/' . $apiVersion . '/graphql.json';
-    }
-
-    private function accessToken(): string
-    {
-        $token = trim((string)config('api.shopify.admin_api_access_token'));
-
-        if ($token === '') {
-            throw new RuntimeException('Missing config: api.shopify.admin_api_access_token');
+        if (!str_contains($shopDomain, '.myshopify.com')) {
+            $shopDomain .= '.myshopify.com';
         }
 
-        return $token;
+        return $shopDomain;
     }
 }
